@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome to Watching Show{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Welcome to Watching Show</h1>
+    <p>Explore our extensive collection of movies and shows!</p>
+
+    <h2>Top 10 Movies</h2>
+    <ul>
+        {% for movie in top_movies %}
+        <li>
+            <a href="{{ url_for('movie.watch_movie', id=movie.id) }}">{{ movie.title }}</a> - Rating: {{ movie.average_rating }}
+        </li>
+        {% endfor %}
+    </ul>
+
+    <h2>Top 10 Shows</h2>
+    <ul>
+        {% for show in top_shows %}
+        <li>
+            <a href="{{ url_for('show.watch_show', id=show.id) }}">{{ show.title }}</a> - Rating: {{ show.average_rating }}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}
