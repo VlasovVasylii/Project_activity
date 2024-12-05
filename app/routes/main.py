@@ -1,10 +1,10 @@
-from flask import render_template, redirect, request
+from flask import render_template, redirect, request, jsonify, flash, url_for
 from flask_login import current_user, login_required
 from app.extensions import db
 from app.routes import main
-from app.forms import CommentForm
-from app.models import Comment, Movie, Show, Episode
-from app.utils import get_recommended_movies, get_recommended_shows
+from app.forms import CommentForm, MovieForm
+from app.models import Comment, Movie, Show, Episode, Rating
+from app.utils import get_recommended_movies, get_recommended_shows, upload_to_s3
 
 
 @main.route('/')
@@ -112,3 +112,110 @@ def recommendations():
         recommendations = []
 
     return render_template('recommendations.html', recommendations=recommendations, content_type=content_type)
+
+
+@main.route('/rate/<content_type>/<int:content_id>', methods=['POST'])
+@login_required
+def rate_content(content_type, content_id):
+    try:
+        rating_value = int(request.json.get('rating', 0))
+        if not (1 <= rating_value <= 10):
+            raise ValueError("Invalid rating")
+    except ValueError:
+        return jsonify({'error': 'Rating must be between 1 and 10'}), 400
+
+    content = None
+    if content_type == 'movie':
+        content = Movie.query.get_or_404(content_id)
+    elif content_type == 'show':
+        content = Show.query.get_or_404(content_id)
+
+    if not content:
+        return jsonify({'error': 'Content not found'}), 404
+
+    rating = Rating.query.filter_by(user_id=current_user.id, **{f"{content_type}_id": content_id}).first()
+    if rating:
+        rating.rating = rating_value
+    else:
+        rating = Rating(user_id=current_user.id, **{f"{content_type}_id": content_id}, rating=rating_value)
+        db.session.add(rating)
+    db.session.commit()
+
+    return jsonify({'message': 'Rating submitted', 'average_rating': content.average_rating}), 200
+
+
+@main.route('/add/<content_type>', methods=['GET', 'POST'])
+@login_required
+def add_content(content_type):
+    form = MovieForm()  # Используем одну форму для обоих типов контента
+    if form.validate_on_submit():
+        thumbnail_url = upload_to_s3(form.thumbnail.data, 'thumbnails')
+        video_url = upload_to_s3(form.video.data, 'videos')
+
+        if content_type == 'movie':
+            content = Movie(
+                title=form.title.data,
+                description=form.description.data,
+                thumbnail_url=thumbnail_url,
+                video_url=video_url,
+                genre=form.genre.data,
+                year=form.year.data
+            )
+        elif content_type == 'show':
+            content = Show(
+                title=form.title.data,
+                description=form.description.data,
+                thumbnail_url=thumbnail_url,
+                genre=form.genre.data,
+                year=form.year.data
+            )
+        else:
+            return "Invalid content type", 400
+
+        db.session.add(content)
+        db.session.commit()
+        flash(f'{content_type.capitalize()} added successfully.', 'success')
+        return redirect(url_for('main.index'))
+    return render_template('add_content.html', form=form, content_type=content_type)
+
+
+@main.route('/search', methods=['GET'])
+def advanced_search():
+    content_type = request.args.get('type', 'movie')
+    genre = request.args.get('genre')
+    min_rating = request.args.get('min_rating', type=float)
+    max_rating = request.args.get('max_rating', type=float)
+    year = request.args.get('year', type=int)
+
+    query = Movie.query if content_type == 'movie' else Show.query
+
+    if genre:
+        query = query.filter(Movie.genre.ilike(f"%{genre}%"))
+    if min_rating:
+        query = query.filter(Movie.average_rating >= min_rating)
+    if max_rating:
+        query = query.filter(Movie.average_rating <= max_rating)
+    if year:
+        query = query.filter(Movie.year == year)
+
+    results = query.all()
+    return render_template('search_results.html', results=results, content_type=content_type)
+
+
+@main.route('/comments/<content_type>/<int:content_id>', methods=['GET'])
+def get_comments(content_type, content_id):
+    sort_by = request.args.get('sort_by', 'new')
+    comments = None
+
+    if content_type == 'movie':
+        comments = Comment.query.filter_by(movie_id=content_id)
+    elif content_type == 'show':
+        comments = Comment.query.filter_by(show_id=content_id)
+
+    if sort_by == 'popular':
+        comments = comments.order_by(Comment.likes.desc())
+    else:
+        comments = comments.order_by(Comment.timestamp.desc())
+
+    comments = comments.all()
+    return render_template('comments.html', comments=comments, content_type=content_type)

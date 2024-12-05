@@ -38,9 +38,7 @@ class MovieForm(FlaskForm):
     description = TextAreaField("Description", validators=[DataRequired()])
     genre = StringField("Genre", validators=[DataRequired()])
     year = IntegerField("Year", validators=[DataRequired()])
-    thumbnail = FileField(
-        "Thumbnail", validators=[FileAllowed(["jpg", "png"], "Images only!")]
-    )
+    thumbnail = FileField("Thumbnail", validators=[FileAllowed(["jpg", "png"], "Images only!")])
     video = FileField("Video", validators=[FileAllowed(["mp4"], "Videos only!")])
     submit = SubmitField("Submit")
 

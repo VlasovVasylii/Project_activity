@@ -16,7 +16,7 @@
                 </form>
                 {% if current_user.is_authenticated %}
                 <li class="nav-item">
-                    <a href="{{ url_for('account.view_account') }}" class="nav-link">
+                    <a href="{{ url_for('auth.view_account') }}" class="nav-link">
                         <img src="/static/profile-icon.png" alt="Profile" style="width: 24px; height: 24px;">
                     </a>
                 </li>

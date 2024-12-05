@@ -1,0 +1,10 @@
+{% for comment in comments %}
+<div class="comment">
+    <p><strong>{{ comment.user.username }}</strong>: {{ comment.content }}</p>
+    <small>{{ comment.timestamp }}</small>
+</div>
+{% endfor %}
+<div>
+    <a href="{{ url_for('main.get_comments', content_type=content_type, content_id=content_id, sort_by='new') }}">Newest</a> |
+    <a href="{{ url_for('main.get_comments', content_type=content_type, content_id=content_id, sort_by='popular') }}">Most Popular</a>
+</div>
