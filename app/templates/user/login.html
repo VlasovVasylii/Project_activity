@@ -18,6 +18,7 @@
         <div class="form-check">
             {{ form.remember(class="form-check-input") }}
             {{ form.remember.label(class="form-check-label") }}
+            <p align="right"><a href="{{ url_for('auth.forgot_password') }}">Did you forget password?</a></p>
         </div>
         <button type="submit" class="btn btn-primary">Login</button>
     </form>

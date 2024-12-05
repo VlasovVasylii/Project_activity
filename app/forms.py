@@ -47,3 +47,28 @@ class UpdateProfileForm(FlaskForm):
     username = StringField("Username", validators=[DataRequired(), Length(min=3, max=20)])
     email = StringField("Email", validators=[DataRequired(), Email()])
     submit = SubmitField("Update")
+
+
+class ChangePasswordForm(FlaskForm):
+    """
+    Форма для изменения пароля в профиле.
+    """
+    current_password = PasswordField(
+        'Current Password',
+        validators=[DataRequired(message="Current password is required.")]
+    )
+    new_password = PasswordField(
+        'New Password',
+        validators=[
+            DataRequired(message="New password is required."),
+            Length(min=6, message="Password must be at least 6 characters long.")
+        ]
+    )
+    confirm_new_password = PasswordField(
+        'Confirm New Password',
+        validators=[
+            DataRequired(message="Please confirm your new password."),
+            EqualTo('new_password', message="Passwords must match.")
+        ]
+    )
+    submit = SubmitField('Change Password')

@@ -6,7 +6,6 @@
 <h1>Add {{ content_type|capitalize }}</h1>
 <form method="POST" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
-    {{ form.csrf_token }}
     <div class="mb-3">
         {{ form.title.label(class="form-label") }}
         {{ form.title(class="form-control") }}
@@ -23,6 +22,10 @@
         {{ form.year.label(class="form-label") }}
         {{ form.year(class="form-control") }}
     </div>
+    <div class="mb-3" id="season_field" style="display: none;">
+        <label for="season_number" class="form-label">Season Number</label>
+        <input type="number" name="season_number" id="season_number" class="form-control">
+    </div>
     <div class="mb-3">
         {{ form.thumbnail.label(class="form-label") }}
         {{ form.thumbnail(class="form-control") }}
@@ -33,4 +36,13 @@
     </div>
     <button type="submit" class="btn btn-primary">Add {{ content_type|capitalize }}</button>
 </form>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const contentType = "{{ content_type }}";
+        const seasonField = document.getElementById('season_field');
+        if (contentType === 'show') {
+            seasonField.style.display = 'block';
+        }
+    });
+</script>
 {% endblock %}

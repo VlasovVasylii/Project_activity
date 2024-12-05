@@ -4,7 +4,7 @@ from app.extensions import db
 from app.routes import main
 from app.forms import CommentForm, MovieForm
 from app.models import Comment, Movie, Show, Episode, Rating
-from app.utils import get_recommended_movies, get_recommended_shows, upload_to_s3
+from app.utils import get_recommended_movies, get_recommended_shows, save_video, get_video_path
 
 
 @main.route('/')
@@ -75,13 +75,15 @@ def watch(content_type, content_id):
         db.session.commit()
         return redirect(request.url)
 
+    video_path = get_video_path(content_type, content.title, content.season_number if content_type == 'show' else None)
     return render_template(
         "watch.html",
         content=content,
         form=form,
         comments=comments,
         seasons=seasons,
-        selected_episode=selected_episode
+        selected_episode=selected_episode,
+        video_path=video_path
     )
 
 
@@ -147,30 +149,36 @@ def rate_content(content_type, content_id):
 @main.route('/add/<content_type>', methods=['GET', 'POST'])
 @login_required
 def add_content(content_type):
-    form = MovieForm()  # Используем одну форму для обоих типов контента
+    form = MovieForm()
     if form.validate_on_submit():
-        thumbnail_url = upload_to_s3(form.thumbnail.data, 'thumbnails')
-        video_url = upload_to_s3(form.video.data, 'videos')
+        video_file = form.video.data
+        thumbnail_file = form.thumbnail.data
 
         if content_type == 'movie':
+            video_path = save_video(video_file, content_type)
+            thumbnail_path = save_video(thumbnail_file, 'movie')  # Сохраняем изображение
             content = Movie(
                 title=form.title.data,
                 description=form.description.data,
-                thumbnail_url=thumbnail_url,
-                video_url=video_url,
+                video_url=video_path,
+                thumbnail_url=thumbnail_path,
                 genre=form.genre.data,
                 year=form.year.data
             )
         elif content_type == 'show':
+            season_number = request.form.get('season_number', type=int)
+            video_path = save_video(video_file, content_type, season=season_number)
+            thumbnail_path = save_video(thumbnail_file, 'show')  # Сохраняем изображение
             content = Show(
                 title=form.title.data,
                 description=form.description.data,
-                thumbnail_url=thumbnail_url,
                 genre=form.genre.data,
-                year=form.year.data
+                year=form.year.data,
+                thumbnail_url=thumbnail_path
             )
         else:
-            return "Invalid content type", 400
+            flash('Invalid content type.', 'danger')
+            return redirect(url_for('main.index'))
 
         db.session.add(content)
         db.session.commit()

@@ -1,4 +1,6 @@
 from flask import Flask
+
+import config
 from app.extensions import db, login_manager
 from app.routes.main import main
 from app.routes.auth import auth
@@ -12,7 +14,7 @@ def register_routes(app):
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object("config.Config")
+    app.config.from_object(config.Config)
 
     # Инициализация расширений
     db.init_app(app)

@@ -1,7 +1,54 @@
 from app.models import Movie, Show, UserPreference
 import boto3
 from flask import current_app
+import os
+from werkzeug.utils import secure_filename
 import requests
+
+
+def save_video(file, content_type, season=None):
+    """
+    Сохраняет видео на локальный сервер в соответствующую директорию.
+
+    :param file: Загружаемый файл
+    :param content_type: Тип контента ('movie' или 'show')
+    :param season: Номер сезона (только для сериалов)
+    :return: Путь к сохранённому файлу
+    """
+    base_path = os.path.join(current_app.root_path, 'static/videos')
+
+    if content_type == 'movie':
+        save_path = os.path.join(base_path, 'movies')
+    elif content_type == 'show' and season:
+        save_path = os.path.join(base_path, 'shows', f'season_{season}')
+    else:
+        raise ValueError("Invalid content type or missing season for shows")
+
+    os.makedirs(save_path, exist_ok=True)
+    filename = secure_filename(file.filename)
+    file_path = os.path.join(save_path, filename)
+    file.save(file_path)
+    return file_path
+
+
+def get_video_path(content_type, title, season=None):
+    """
+    Генерирует путь к видео на локальном сервере.
+
+    :param content_type: Тип контента ('movie' или 'show')
+    :param title: Название видео
+    :param season: Номер сезона (только для сериалов)
+    :return: Путь к видеофайлу
+    """
+    base_path = os.path.join(current_app.root_path, 'static/videos')
+
+    if content_type == 'movie':
+        return os.path.join(base_path, 'movies', f"{title}.mp4")
+    elif content_type == 'show' and season:
+        return os.path.join(base_path, 'shows', f"season_{season}", f"{title}.mp4")
+    else:
+        raise ValueError("Invalid content type or missing season for shows")
+
 
 
 def get_recommended_movies(user_id):

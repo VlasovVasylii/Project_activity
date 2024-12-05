@@ -24,13 +24,13 @@
         <div class="col-md-8">
             {% if content_type == "movie" %}
                 <video controls class="w-100">
-                    <source src="{{ content.video_url }}" type="video/mp4">
+                    <source src="{{url_for('static', filename=video_path.split('static/')[-1]) }}" type="video/mp4">
                     Your browser does not support the video tag.
                 </video>
             {% elif content_type == "show" %}
                 {% if selected_episode %}
                     <video controls class="w-100">
-                        <source src="{{ selected_episode.video_url }}" type="video/mp4">
+                        <source src="{{url_for('static', filename=video_path.split('static/')[-1]) }}" type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
                     <h4>{{ selected_episode.title }}</h4>
